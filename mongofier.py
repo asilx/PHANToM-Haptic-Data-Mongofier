@@ -1,11 +1,13 @@
 from argparse import ArgumentParser
 import os.path
 import numpy as np
+import uuid
 import pandas as pd
 import matplotlib.pyplot as plt
 import pymongo
 import datetime
 from pymongo import MongoClient
+from owlready2 import *
 
 #parser = argparse.ArgumentParser(description='generating NEEMs out of EASE CRC Research Data coming from PHANToM Haptic Device')
 #parser.add_argument('integers', metavar='N', type=int, nargs='+',
@@ -56,20 +58,47 @@ hdf_file = pd.HDFStore(args.filepath, 'r')
 trajectory_data=hdf_file['transport_trajectories']
 hdf_file.close() # closes the file
 
-trajectory_data.head()
+#trajectory_data.head()
+
+min_ts = -1
+max_ts = -1
+
+neem_onto = get_ontology("http://knowrob.org/kb/knowrob.owl")
+
+class PickAndPlace(Thing):
+    namespace = neem_onto
+
+class TimePoint(Thing):
+    namespace = neem_onto
+
+class startTime(ObjectProperty):
+    namespace = neem_onto
+    domain = [PickAndPlace]
+    range = [TimePoint]
+
+class endTime(ObjectProperty):
+    namespace = neem_onto
+    domain = [PickAndPlace]
+    range = [TimePoint]
+
 old_trial = -1
 inserter = {}
-
+experiments = []
 for ind, current_data in trajectory_data.sort_values(by=['participant', 'trial', 'ts']).iterrows():
     
     trial = current_data['trial']
 
     if old_trial != trial and old_trial != -1:
        # assert old dictionary
+       endTime = TimePoint("http://knowrob.org/kb/knowrob.owl#TimePoint_" + inserter['timestamps'][len(inserter['timestamps']) - 1])
+       experiments[len(experiments)-1].endTime = endTime
        collection_id = collection.insert_one(inserter).inserted_id
        inserter = {}
 
     if old_trial != trial:
+       experiments.append(PickAndPlace("PickAndPlace" + uuid.uuid4()))
+       stTime = TimePoint("http://knowrob.org/kb/knowrob.owl#TimePoint_" + current_data['ts'])
+       experiments[len(experiments)-1].startTime = stTime
        old_trial = trial
        inserter['trial'] = trial
        inserter['participant'] = current_data['participant']
@@ -94,7 +123,6 @@ for ind, current_data in trajectory_data.sort_values(by=['participant', 'trial',
     inserter['norm_ts'].append(current_data['norm_ts'])
     inserter['SPARC'].append(current_data['SPARC'])
     inserter['LDLJ'].append(current_data['LDLJ'])
-
 
 
 
