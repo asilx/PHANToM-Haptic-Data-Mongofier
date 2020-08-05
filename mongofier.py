@@ -90,14 +90,14 @@ for ind, current_data in trajectory_data.sort_values(by=['participant', 'trial',
 
     if old_trial != trial and old_trial != -1:
        # assert old dictionary
-       endTime = TimePoint("http://knowrob.org/kb/knowrob.owl#TimePoint_" + inserter['timestamps'][len(inserter['timestamps']) - 1])
+       endTime = TimePoint("TimePoint_" + inserter['timestamps'][len(inserter['timestamps']) - 1], namespace=neem_onto)
        experiments[len(experiments)-1].endTime = endTime
        collection_id = collection.insert_one(inserter).inserted_id
        inserter = {}
 
     if old_trial != trial:
-       experiments.append(PickAndPlace("PickAndPlace" + uuid.uuid4()))
-       stTime = TimePoint("http://knowrob.org/kb/knowrob.owl#TimePoint_" + current_data['ts'])
+       experiments.append(PickAndPlace("PickAndPlace" + uuid.uuid4(), namespace=neem_onto))
+       stTime = TimePoint("TimePoint_" + current_data['ts'], namespace=neem_onto)
        experiments[len(experiments)-1].startTime = stTime
        old_trial = trial
        inserter['trial'] = trial
