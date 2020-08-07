@@ -54,14 +54,14 @@ collection = db[args.db_table]
 #db = client['ease-h']
 #collection = db['trajectories']
 
-hdf_file = pd.HDFStore(args.filepath, 'r')
+hdf_file_path = args.filepath
+owl_file_path = hdf_file_path.replace("h5","owl")
+hdf_file = pd.HDFStore(hdf_file_path, 'r')
+
 trajectory_data=hdf_file['transport_trajectories']
 hdf_file.close() # closes the file
 
 #trajectory_data.head()
-
-min_ts = -1
-max_ts = -1
 
 neem_onto = get_ontology("http://knowrob.org/kb/knowrob.owl")
 
@@ -124,6 +124,8 @@ for ind, current_data in trajectory_data.sort_values(by=['participant', 'trial',
     inserter['SPARC'].append(current_data['SPARC'])
     inserter['LDLJ'].append(current_data['LDLJ'])
 
+
+neem_onto.save(file = owl_file_path, format = "rdfxml")
 
 
 
