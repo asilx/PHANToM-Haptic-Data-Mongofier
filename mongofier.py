@@ -21,23 +21,19 @@ def is_valid_file(parser, arg):
 
 parser = ArgumentParser(description='generating NEEMs out of EASE CRC Research Data coming from PHANToM Haptic Device')
 parser.add_argument("-f", dest="filepath", required=True,
-                    help="input h5 file containing ", metavar="H5FILE",
-                    type=lambda x: is_valid_file(parser, x))
+                    help="input h5 file containing ", metavar="H5FILE")
 parser.add_argument("-i", dest="ip", required=True,
-                    help="Mongo Server's IP", metavar="MONGO_IP",
-                    type=open)
+                    help="Mongo Server's IP", metavar="MONGO_IP" )
 
 parser.add_argument("-p", dest="port", required=True,
                     help="Mongo Server's Port", metavar="MONGO_PORT",
                     type=int)
 
 parser.add_argument("-n", dest="db_name", required=True,
-                    help="Which database on Mongo", metavar="MONGO_DB_NAME",
-                    type=open)
+                    help="Which database on Mongo", metavar="MONGO_DB_NAME")
 
 parser.add_argument("-t", dest="db_table", required=True,
-                    help="Which table on the database", metavar="MONGO_DB_TABLE",
-                    type=open)
+                    help="Which table on the database", metavar="MONGO_DB_TABLE")
 
 
 args = parser.parse_args()
@@ -90,15 +86,15 @@ for ind, current_data in trajectory_data.sort_values(by=['participant', 'trial',
 
     if old_trial != trial and old_trial != -1:
        # assert old dictionary
-       endTime = TimePoint("TimePoint_" + inserter['timestamps'][len(inserter['timestamps']) - 1], namespace=neem_onto)
-       experiments[len(experiments)-1].endTime = endTime
+       endTime = TimePoint("TimePoint_" + str(inserter['timestamps'][len(inserter['timestamps']) - 1]), namespace=neem_onto)
+       experiments[len(experiments)-1].endTime = [endTime]
        collection_id = collection.insert_one(inserter).inserted_id
        inserter = {}
 
     if old_trial != trial:
-       experiments.append(PickAndPlace("PickAndPlace" + uuid.uuid4(), namespace=neem_onto))
-       stTime = TimePoint("TimePoint_" + current_data['ts'], namespace=neem_onto)
-       experiments[len(experiments)-1].startTime = stTime
+       experiments.append(PickAndPlace("PickAndPlace" + str(uuid.uuid4()), namespace=neem_onto))
+       stTime = TimePoint("TimePoint_" + str(current_data['ts']), namespace=neem_onto)
+       experiments[len(experiments)-1].startTime = [stTime]
        old_trial = trial
        inserter['trial'] = trial
        inserter['participant'] = current_data['participant']
