@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pymongo
 import datetime
+import time 
 from pymongo import MongoClient
 from owlready2 import *
 
@@ -61,21 +62,23 @@ hdf_file.close() # closes the file
 
 neem_onto = get_ontology("http://knowrob.org/kb/knowrob.owl")
 
-class PickAndPlace(Thing):
-    namespace = neem_onto
+with neem_onto:
+    class PickAndPlace(Thing):
+        namespace = neem_onto
 
-class TimePoint(Thing):
-    namespace = neem_onto
+    class TimePoint(Thing):
+        namespace = neem_onto
 
-class startTime(ObjectProperty):
-    namespace = neem_onto
-    domain = [PickAndPlace]
-    range = [TimePoint]
+    class startTime(ObjectProperty):
+        namespace = neem_onto
+        domain = [PickAndPlace]
+        range = [TimePoint]
 
-class endTime(ObjectProperty):
-    namespace = neem_onto
-    domain = [PickAndPlace]
-    range = [TimePoint]
+    class endTime(ObjectProperty):
+        namespace = neem_onto
+        domain = [PickAndPlace]
+        range = [TimePoint]
+
 
 old_trial = -1
 inserter = {}
@@ -84,22 +87,34 @@ for ind, current_data in trajectory_data.sort_values(by=['participant', 'trial',
     
     trial = current_data['trial']
 
+    time_str = str(current_data['ts'])
+    if len(time_str) == 19:
+       time_str = datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S").timestamp()
+    else:
+       time_str = datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f").timestamp()
+
     if old_trial != trial and old_trial != -1:
        # assert old dictionary
-       endTime = TimePoint("TimePoint_" + str(inserter['timestamps'][len(inserter['timestamps']) - 1]), namespace=neem_onto)
+       end_time_str = str(inserter['timestamps'][len(inserter['timestamps']) - 1])
+       #if len(time_str) == 19:
+       #    time_str = time.mktime(datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S").timetuple())
+       #else:
+       #    time_str = time.mktime(datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f").timetuple())
+       endTime = TimePoint("TimePoint_" + end_time_str, namespace=neem_onto)
        experiments[len(experiments)-1].endTime = [endTime]
        collection_id = collection.insert_one(inserter).inserted_id
        inserter = {}
 
     if old_trial != trial:
-       experiments.append(PickAndPlace("PickAndPlace" + str(uuid.uuid4()), namespace=neem_onto))
-       stTime = TimePoint("TimePoint_" + str(current_data['ts']), namespace=neem_onto)
+       experiments.append(PickAndPlace("PickAndPlace_" + str(uuid.uuid4()), namespace=neem_onto))
+       stTime = TimePoint("TimePoint_" + str(time_str), namespace=neem_onto)
        experiments[len(experiments)-1].startTime = [stTime]
        old_trial = trial
        inserter['trial'] = trial
        inserter['participant'] = current_data['participant']
        inserter['condition'] = current_data['condition']
        inserter['trial_i'] = current_data['trial_i']
+       inserter['start'] = current_data['ts']
        inserter['traj_x'] = []
        inserter['traj_y'] = []
        inserter['traj_z'] = []
@@ -115,7 +130,8 @@ for ind, current_data in trajectory_data.sort_values(by=['participant', 'trial',
     inserter['traj_z'].append(current_data['z'])
     inserter['speed'].append(current_data['speed'])
     inserter['acc'].append(current_data['acc'])
-    inserter['timestamps'].append(current_data['ts'])
+    #inserter['timestamps'].append(current_data['ts'])
+    inserter['timestamps'].append(time_str)
     inserter['norm_ts'].append(current_data['norm_ts'])
     inserter['SPARC'].append(current_data['SPARC'])
     inserter['LDLJ'].append(current_data['LDLJ'])
